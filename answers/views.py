@@ -1,4 +1,5 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from answers.models import UserAnswer
@@ -8,7 +9,7 @@ from answers.serializers import UserAnswerSerializer
 class UserAnswerView(generics.CreateAPIView):
     queryset = UserAnswer.objects.all()
     serializer_class = UserAnswerSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def create(self, *args, **kwargs):
         user = self.request.user

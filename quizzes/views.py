@@ -1,12 +1,15 @@
+import random
+
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
-from quizzes.models import Category, Quiz
-from quizzes.serializers import CategorySerializer, QuizSerializer
+from quizzes.models import Category, Quiz, Topic
+from quizzes.serializers import CategorySerializer, QuizSerializer, TopicSerializer
 
 User = get_user_model()
 
@@ -22,6 +25,8 @@ class QuizzesView(ListAPIView):
 
 
 class CategoryUserStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, *args, **kwargs):
         # Prefetch related questions and their categories upfront
         categories = Category.objects.prefetch_related("questions")
@@ -54,3 +59,23 @@ class CategoryUserStatsView(APIView):
             users_result.sort(key=lambda u: u["xC"], reverse=True)
             result.append({"category_name": category.name, "users": users_result})
         return Response(result)
+
+
+class RandomUnansweredTopicView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        user = self.request.user
+        # Annotate topics with total and answered questions
+        topics = Topic.objects.annotate(
+            total_questions=Count("questions", distinct=True),
+            answered_questions=Count(
+                "questions__useranswer", filter=Q(questions__useranswer__user=user), distinct=True
+            ),
+        ).filter(answered_questions__lt=F("total_questions"))
+        if not topics.exists():
+            return Response({"message": "No unanswered topics left", "result": None})
+        # Pick a random topic from the filtered queryset
+        topic = random.choice(list(topics))
+        serializer = TopicSerializer(topic)
+        return Response({"message": "Random unanswered topic", "result": serializer.data})
