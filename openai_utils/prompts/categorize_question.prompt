@@ -1,0 +1,10 @@
+I need you to categorize a quiz game question.
+This is the question: '{statement}'
+These are my category options: {categories}
+Tell which of my categories better apply to this question/answer.
+Up to 2 categories.
+If and only if none of my category options fits, you can suggesst other categories yourself.
+Be short about the suggested categoy names - max 1 word, in Title Case.
+If you suggest categories outside my list, don't be too specific.
+Give me just the list of categories, comma separated, nothing else.
+Example: `Astronomy,Politics`

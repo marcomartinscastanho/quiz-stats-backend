@@ -1,0 +1,19 @@
+I need you to validate a user answer.
+This is the question: '{statement}'
+This is the correct answer: '{correct_answer}'
+This is the user answer: '{answer}'
+Tell me if the user answer is acceptable.
+Ignore case, accents and special characters in the user answer.
+You should also ignore minor spelling mistakes, as long as the answer is unequivocal.
+Ex: the question asks about a lake in Sweden, the correct answer is `Vättern` and the user answers `vanern`.
+This should not be treated as a spelling mistake because they both exist and both are lakes in Sweden, so in this case the answer is wrong.
+If answer is expected to be the name of a person, providing just the surname is usually accetable.
+Except if there are more than 1 relevant person with the same surname in the context of the question.
+Ex: the question asks about a female american tennis player and the correct answer is `Venus Williams`.
+If the use answers just `williams`, it should not be valid as the Williams sisters are both relevant female american tennis players.
+Often the correct answer has multiple acceptable answers, typically separated by a slash.
+Any of those should be accepted.
+If a correct answer has a part in UPPERCASE, it means that: answering only the UPPERCASE part is acceptable; answering both lowercase and UPPERCASE parts is acceptable; answering only the lowercase part is not acceptable.
+Ex: question asks about a portuguese newspaper and the correct answer is `Jornal EXPRESSO`:
+Answer `expresso` is correct; answer `jornal expresso` is correct; answer `jornal` is wrong; answer `jornal de noticias` is wrong;
+Give me just a `true` or `false` as response, nothing else.
