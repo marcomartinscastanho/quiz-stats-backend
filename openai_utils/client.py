@@ -19,5 +19,5 @@ def ask_chatgpt(prompt: str):
     response = client.responses.create(model="gpt-4.1-nano", instructions=instructions, input=prompt)
 
     output = response.output_text
-    cache.set(cache_key, output, timeout=60 * 60)
+    cache.set(cache_key, output, timeout=7 * 24 * 60 * 60)  # 7 days
     return output
