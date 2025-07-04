@@ -1,15 +1,18 @@
 import random
+from collections import defaultdict
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Q, QuerySet
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
+from openai_utils.client import ask_chatgpt
+from openai_utils.loaders import get_prompt
 from quizzes.models import Category, Quiz, Topic
-from quizzes.serializers import CategorySerializer, QuizSerializer, TopicSerializer
+from quizzes.serializers import CategorySerializer, PredictedTopicStatsInputSerializer, QuizSerializer, TopicSerializer
 
 User = get_user_model()
 
@@ -79,3 +82,74 @@ class RandomUnansweredTopicView(APIView):
         topic = random.choice(list(topics))
         serializer = TopicSerializer(topic)
         return Response({"message": "Random unanswered topic", "result": serializer.data})
+
+
+class PredictedTopicStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        serializer = PredictedTopicStatsInputSerializer(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        user_ids = validated_data["user_ids"]
+        topic_names: list[str] = validated_data["topics"]
+        users = User.objects.filter(id__in=user_ids).only("id", "username")
+        # users_by_id = {u.id: u for u in users}
+        # Map: topic_name -> list of Category instances (from your aux function)
+        categories = Category.objects.all()
+        print("categories", categories)
+        topic_to_categories = {
+            topic_name: get_categories_for_topic(topic_name, categories) for topic_name in topic_names
+        }
+        print("topic_to_categories", topic_to_categories)
+        # Flatten all categories to reduce queries
+        all_categories = set(cat.pk for cats in topic_to_categories.values() for cat in cats.all())
+        print("all_categories", all_categories)
+        # Prefetch all UserAnswers relevant to the users and categories involved
+        user_answers = UserAnswer.objects.filter(user_id__in=user_ids, question__categories__in=all_categories).values(
+            "user_id", "question__categories", "is_correct"
+        )
+        # Build lookup table: (user_id, category_id) -> [correct, total]
+        category_answer_counts = defaultdict(lambda: {"correct": 0, "total": 0})
+        for ua in user_answers:
+            category_id = ua["question__categories"]
+            key = (ua["user_id"], category_id)
+            category_answer_counts[key]["total"] += 1
+            if ua["is_correct"]:
+                category_answer_counts[key]["correct"] += 1
+        results = []
+        for topic_name in topic_names:
+            categories = topic_to_categories.get(topic_name, [])
+            category_ids = [c.pk for c in categories]
+            topic_predicted_xT = 0
+            topic_users_data = []
+            for user in users:
+                predicted_user_xT = 0
+                for category_id in category_ids:
+                    stats = category_answer_counts.get((user.pk, category_id))
+                    if stats and stats["total"]:
+                        predicted_user_xC = (stats["correct"] / stats["total"]) * 2
+                        predicted_user_xT += predicted_user_xC
+                topic_users_data.append(
+                    {"id": user.pk, "username": user.username, "predicted_user_xT": round(predicted_user_xT, 1)}
+                )
+                topic_predicted_xT += predicted_user_xT
+            topic_users_data.sort(key=lambda x: x["predicted_user_xT"], reverse=True)
+            results.append(
+                {
+                    "topic_name": topic_name,
+                    "predicted_team_xT": round(topic_predicted_xT, 1),
+                    "categories": [c.name for c in categories],
+                    "users": topic_users_data,
+                }
+            )
+        results.sort(key=lambda x: x["predicted_team_xT"], reverse=True)
+        return Response(results)
+
+
+def get_categories_for_topic(topic_name: str, categories: QuerySet[Category]):
+    prompt = get_prompt("categorize_topic", topic=topic_name, categories=categories.values_list("name", flat=True))
+    response = ask_chatgpt(prompt)
+    category_names = [] if response is None or response == "None" else response.split(",")
+    category_names = [c.strip() for c in category_names]
+    return categories.filter(name__in=category_names)

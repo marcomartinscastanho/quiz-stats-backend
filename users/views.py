@@ -1,8 +1,41 @@
+from django.contrib.auth import get_user_model
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
+from users.serializers import GroupSerializer, UserDetailSerializer
+
+User = get_user_model()
+
+
+class CurrentUserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        serializer = UserDetailSerializer(self.request.user)
+        return Response(serializer.data)
+
+
+class MyGroupsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        groups = self.request.user.groups.all()
+        serializer = GroupSerializer(groups, many=True)
+        return Response(serializer.data)
+
+
+class UsersInMyGroupsView(ListAPIView):
+    serializer_class = UserDetailSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Get group IDs of the requesting user
+        user_groups = self.request.user.groups.all()
+        # Get users who share any of those groups
+        return User.objects.filter(groups__in=user_groups).distinct()
 
 
 class UserCategoryStatsView(APIView):

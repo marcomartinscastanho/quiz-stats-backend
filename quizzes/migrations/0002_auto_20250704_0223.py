@@ -12,6 +12,7 @@ def populate_categories(apps, schema_editor):
         "Botany",
         "Business",
         "Celebrities",
+        "Chemistry",
         "Cinema",
         "Computers",
         "Design",
