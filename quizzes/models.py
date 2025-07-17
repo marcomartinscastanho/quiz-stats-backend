@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Count, Q, QuerySet
 
 
 class Quiz(models.Model):
@@ -13,9 +14,19 @@ class Quiz(models.Model):
         return f"Season {self.season} - Week {self.week}"
 
 
+def ppt_upload_path(instance, filename):
+    season = instance.quiz.season
+    part_num = instance.sequence
+    ext = filename.split(".")[-1]
+    return f"quiz_ppts/S{season}/part_{part_num}.{ext}"
+
+
 class QuizPart(models.Model):
     quiz = models.ForeignKey(to=Quiz, on_delete=models.CASCADE, related_name="parts")
     sequence = models.PositiveSmallIntegerField()
+    ppt_file = models.FileField(
+        upload_to=ppt_upload_path, blank=True, null=True, help_text="Optional PowerPoint file for this quiz part"
+    )
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["quiz", "sequence"], name="unique_part_per_quiz_sequence")]
@@ -33,24 +44,18 @@ class Topic(models.Model):
 
     @property
     def xT(self):
-        from answers.models import UserAnswer
-
-        questions = self.questions.all()
+        questions: QuerySet[Question] = self.questions.all()
         if not questions.exists():
             return None
-        # Prefetch all answers for these questions
-        answers = UserAnswer.objects.filter(question__in=questions).select_related("question")
-        # Group answers by question id
-        answer_map = {}
-        for ans in answers:
-            answer_map.setdefault(ans.question_id, []).append(ans)
+        annotated = questions.annotate(
+            total_answers=Count("useranswer"),
+            correct_answers=Count("useranswer", filter=Q(useranswer__is_correct=True)),
+        ).filter(total_answers__gt=0)
+        if not annotated.exists():
+            return None
         xps = []
-        for question in questions:
-            q_answers = answer_map.get(question.id, [])
-            if not q_answers:
-                continue
-            correct = sum(1 for a in q_answers if a.is_correct)
-            xp = (correct / len(q_answers)) * 2
+        for q in annotated:
+            xp = (q.correct_answers / q.total_answers) * 2
             xps.append(xp)
         if not xps:
             return None
@@ -81,12 +86,13 @@ class Question(models.Model):
     def xP(self):
         from answers.models import UserAnswer
 
-        # Get all UserAnswers for this question
-        answers = UserAnswer.objects.filter(question=self)
-        total = answers.count()
+        qs = UserAnswer.objects.filter(question=self).aggregate(
+            total=Count("id"), correct=Count("id", filter=Q(is_correct=True))
+        )
+        total = qs["total"]
         if total == 0:
             return None
-        correct = answers.filter(is_correct=True).count()
+        correct = qs["correct"]
         return round((correct / total) * 2, 1)
 
     @property
