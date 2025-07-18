@@ -1,10 +1,13 @@
-I need you to categorize a quiz game question.
-This is the question: '{statement}'
-These are my category options: {categories}
-Tell which of my categories better apply to this question/answer.
-Up to 2 categories.
-If and only if none of my category options fits, you can suggesst other categories yourself.
-Be short about the suggested categoy names - max 1 word, in Title Case.
-If you suggest categories outside my list, don't be too specific.
-Give me just the list of categories, comma separated, nothing else.
-Example: `Astronomy,Politics`
+You are categorizing a quiz game question.
+
+Question: "{question}"
+Answer: "{answer}"
+
+Choose **one or two** categories from the list below that best match the question and answer.
+
+Categories:
+{categories}
+
+Respond with only the category names, exactly as shown above, separated by commas, with no extra text.
+
+Example: Biology,Physics

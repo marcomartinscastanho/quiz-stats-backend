@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
+from quizzes.models import CategoryGroup
 from users.serializers import GroupSerializer, UserDetailSerializer
 
 User = get_user_model()
@@ -69,4 +70,46 @@ class UserCategoryStatsView(APIView):
             key=lambda x: x["xC"],
             reverse=True,
         )
+        return Response(response)
+
+
+class UserCategoryGroupStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        user = self.request.user
+
+        # Load all category groups
+        all_groups = CategoryGroup.objects.all()
+        group_stats = {group.name: {"correct": 0, "total": 0} for group in all_groups}
+
+        # Fetch user answers and prefetch related categories and their groups
+        user_answers = (
+            UserAnswer.objects.filter(user=user)
+            .select_related("question")
+            .prefetch_related("question__categories__group")
+        )
+
+        for ua in user_answers:
+            for category in ua.question.categories.all():
+                group = category.group
+                stats = group_stats[group.name]
+                stats["total"] += 1
+                if ua.is_correct:
+                    stats["correct"] += 1
+
+        # Prepare sorted response
+        response = sorted(
+            [
+                {
+                    "group_name": group_name,
+                    "xC": round((stats["correct"] / stats["total"]) * 2, 1) if stats["total"] > 0 else 0.0,
+                    "answered": stats["total"],
+                }
+                for group_name, stats in group_stats.items()
+            ],
+            key=lambda x: x["xC"],
+            reverse=True,
+        )
+
         return Response(response)

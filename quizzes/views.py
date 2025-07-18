@@ -121,7 +121,7 @@ class PredictedTopicStatsView(APIView):
         for topic_name in topic_names:
             categories = topic_to_categories.get(topic_name, [])
             category_ids = [c.pk for c in categories]
-            topic_predicted_xT = 0
+            topic_predicted_xT = 0.0
             topic_users_data = []
             for user in users:
                 predicted_user_xT = 0

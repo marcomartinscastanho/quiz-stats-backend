@@ -33,8 +33,10 @@ class QuestionInline(admin.StackedInline):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name"]
-    ordering = ("name",)
+    list_display = ["name", "group"]
+    list_filter = ["group"]
+    search_fields = ["name"]
+    ordering = ["group__name", "name"]
     inlines = [QuestionInline]
 
 

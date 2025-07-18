@@ -3,42 +3,37 @@
 from django.db import migrations
 
 
-def populate_categories(apps, schema_editor):
+def seed_categories(apps, schema_editor):
+    CategoryGroup = apps.get_model("quizzes", "CategoryGroup")
     Category = apps.get_model("quizzes", "Category")
-    categories = [
-        "Architecture",
-        "Basketball",
-        "Biology",
-        "Botany",
-        "Business",
-        "Celebrities",
-        "Chemistry",
-        "Cinema",
-        "Computers",
-        "Design",
-        "Engineering",
-        "Entertainment",
-        "Finance",
-        "Football",
-        "Geography",
-        "History",
-        "Journalism",
-        "Literature",
-        "Mathematics",
-        "Media",
-        "Music",
-        "Mythology",
-        "Philosophy",
-        "Politics",
-        "Recreation",
-        "Science",
-        "Sociology",
-        "Sports",
-        "Technology",
-        "Travel",
-        "Wellness",
-    ]
-    Category.objects.bulk_create([Category(name=name) for name in categories])
+
+    groups_and_categories = {
+        "Science": ["Biology", "Technology", "Chemistry", "Inventions", "Physics", "Animals", "Space"],
+        "History": ["Wars", "Civilizations", "Kings/Presidents", "Historical Events"],
+        "Geography": ["Capitals", "Countries", "Flags", "Landmarks", "Mountains", "Bodies of Water"],
+        "Arts/Entertainment": [
+            "Film/TV",
+            "Photography",
+            "Theatre",
+            "Music",
+            "Videogames",
+            "Modern Art",
+            "Literature",
+            "Sculpture",
+            "Painting",
+        ],
+        "Sports": ["Olympics", "Soccer", "Basketball", "Sports Records", "Motor Sports"],
+        "Language": ["Foreign Languages", "Grammar", "Idioms", "Etymology", "Riddles"],
+        "Pop Culture": ["Celebreties", "Memes", "Brands", "Food", "Fashion"],
+        "Current Events": ["Politics", "News", "Laws", "Elections"],
+    }
+
+    for group_name, categories in groups_and_categories.items():
+        group = CategoryGroup.objects.create(name=group_name)
+        for category_name in categories:
+            Category.objects.create(name=category_name, group=group)
+        # Add General [Group] category
+        Category.objects.create(name=f"General {group_name}", group=group)
 
 
 class Migration(migrations.Migration):
@@ -47,5 +42,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(populate_categories, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(seed_categories, reverse_code=migrations.RunPython.noop),
     ]

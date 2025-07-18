@@ -16,9 +16,10 @@ class Quiz(models.Model):
 
 def ppt_upload_path(instance, filename):
     season = instance.quiz.season
+    week = instance.quiz.week
     part_num = instance.sequence
     ext = filename.split(".")[-1]
-    return f"quiz_ppts/S{season}/part_{part_num}.{ext}"
+    return f"quiz_ppts/S{season}/w{week}_part_{part_num}.{ext}"
 
 
 class QuizPart(models.Model):
@@ -62,11 +63,20 @@ class Topic(models.Model):
         return round(sum(xps), 1)
 
 
+class CategoryGroup(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    group = models.ForeignKey(CategoryGroup, related_name="categories", on_delete=models.CASCADE)
 
     class Meta:
         verbose_name_plural = "categories"
+        unique_together = ("name", "group")
 
     def __str__(self):
         return self.name

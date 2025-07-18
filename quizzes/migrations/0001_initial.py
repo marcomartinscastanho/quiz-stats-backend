@@ -11,13 +11,29 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name="CategoryGroup",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=100, unique=True)),
+            ],
+        ),
+        migrations.CreateModel(
             name="Category",
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("name", models.CharField(max_length=100)),
+                (
+                    "group",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="categories",
+                        to="quizzes.categorygroup",
+                    ),
+                ),
             ],
             options={
                 "verbose_name_plural": "categories",
+                "constraints": [models.UniqueConstraint(fields=("name", "group"), name="unique_quiz_season_week")],
             },
         ),
         migrations.CreateModel(
