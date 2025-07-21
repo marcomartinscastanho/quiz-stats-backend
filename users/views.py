@@ -84,35 +84,28 @@ class UserCategoryGroupStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, *args, **kwargs):
-        # Load all category groups
-        all_groups = CategoryGroup.objects.all().order_by("id")
-        group_stats = {group.name: {"correct": 0, "total": 0} for group in all_groups}
-
-        # Fetch user answers and prefetch related categories and their groups
         identifier = kwargs["identifier"]
+        all_groups = CategoryGroup.objects.all().order_by("id")
+        group_stats = {group.pk: {"group_name": group.name, "correct": 0, "total": 0} for group in all_groups}
         user_answers = self._get_user_answers_for_identifier(identifier)
-
         for ua in user_answers:
             for category in ua.question.categories.all():
                 group = category.group
-                stats = group_stats[group.name]
+                stats = group_stats[group.pk]
                 stats["total"] += 1
                 if ua.is_correct:
                     stats["correct"] += 1
-
         # Prepare sorted response
-        response = sorted(
-            [
-                {
-                    "group_name": group_name,
-                    "xC": round((stats["correct"] / stats["total"]) * 2, 1) if stats["total"] > 0 else 0.0,
-                    "answered": stats["total"],
-                }
-                for group_name, stats in group_stats.items()
-            ],
-            key=lambda x: x["xC"],
-            reverse=True,
-        )
+        response = [
+            {
+                "group_id": group_id,
+                "group_name": stats["group_name"],
+                "xC": round((stats["correct"] / stats["total"]) * 2, 1) if stats["total"] > 0 else 0.0,
+                "answered": stats["total"],
+            }
+            for group_id, stats in group_stats.items()
+        ]
+        response = sorted(response, key=lambda x: x["group_id"])
 
         return Response(response)
 
