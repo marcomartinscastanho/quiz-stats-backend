@@ -64,3 +64,11 @@ class PredictedTopicStatsInputSerializer(serializers.Serializer):
         if missing_ids:
             raise serializers.ValidationError(f"Invalid user_ids: {list(missing_ids)}")
         return value
+
+
+class QuizProgressSerializer(serializers.ModelSerializer):
+    progress = serializers.FloatField()
+
+    class Meta:
+        model = Quiz
+        fields = ["id", "season", "week", "progress"]

@@ -1,18 +1,24 @@
 import random
 from collections import defaultdict
 
+from answers.models import UserAnswer
 from django.contrib.auth import get_user_model
-from django.db.models import Count, F, Q, QuerySet
+from django.db.models import Count, F, Prefetch, Q, QuerySet
+from openai_utils.client import ask_chatgpt
+from openai_utils.loaders import get_prompt
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from answers.models import UserAnswer
-from openai_utils.client import ask_chatgpt
-from openai_utils.loaders import get_prompt
 from quizzes.models import Category, Quiz, Topic
-from quizzes.serializers import CategorySerializer, PredictedTopicStatsInputSerializer, QuizSerializer, TopicSerializer
+from quizzes.serializers import (
+    CategorySerializer,
+    PredictedTopicStatsInputSerializer,
+    QuizProgressSerializer,
+    QuizSerializer,
+    TopicSerializer,
+)
 
 User = get_user_model()
 
@@ -99,7 +105,7 @@ class PredictedTopicStatsView(APIView):
         categories = Category.objects.all()
         print("categories", categories)
         topic_to_categories = {
-            topic_name: get_categories_for_topic(topic_name, categories) for topic_name in topic_names
+            topic_name: self._get_categories_for_topic(topic_name, categories) for topic_name in topic_names
         }
         print("topic_to_categories", topic_to_categories)
         # Flatten all categories to reduce queries
@@ -146,10 +152,35 @@ class PredictedTopicStatsView(APIView):
         results.sort(key=lambda x: x["predicted_team_xT"], reverse=True)
         return Response(results)
 
+    def _get_categories_for_topic(topic_name: str, categories: QuerySet[Category]):
+        prompt = get_prompt("categorize_topic", topic=topic_name, categories=categories.values_list("name", flat=True))
+        response = ask_chatgpt(prompt)
+        category_names = [] if response is None or response == "None" else response.split(",")
+        category_names = [c.strip() for c in category_names]
+        return categories.filter(name__in=category_names)
 
-def get_categories_for_topic(topic_name: str, categories: QuerySet[Category]):
-    prompt = get_prompt("categorize_topic", topic=topic_name, categories=categories.values_list("name", flat=True))
-    response = ask_chatgpt(prompt)
-    category_names = [] if response is None or response == "None" else response.split(",")
-    category_names = [c.strip() for c in category_names]
-    return categories.filter(name__in=category_names)
+
+class ListQuizProgressView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = QuizProgressSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        user_answered_set = set(UserAnswer.objects.filter(user=user).values_list("question_id", flat=True))
+        quizzes = Quiz.objects.prefetch_related(Prefetch("parts__topics__questions", to_attr="all_questions")).order_by(
+            "season", "week"
+        )
+        for quiz in quizzes:
+            # Collect all questions from all quiz parts
+            questions = set()
+            for part in quiz.parts.all():
+                for topic in part.topics.all():
+                    for q in topic.questions.all():
+                        questions.add(q.id)
+            if not questions:
+                progress = 0.0
+            else:
+                answered = questions & user_answered_set
+                progress = round((len(answered) / len(questions)) * 100, 1)
+            quiz.progress = progress
+        return quizzes
