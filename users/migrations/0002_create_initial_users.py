@@ -3,20 +3,35 @@
 from django.contrib.auth.hashers import make_password
 from django.db import migrations
 
-USERNAMES = ["mcastanho", "ftrocado", "jsobreira", "jsoares", "lprogano", "lluzio", "moliveira", "pesteves", "tcovas"]
+USERS = [
+    {"username": "mcastanho", "first_name": "Marco", "last_name": "Castanho"},
+    {"username": "ftrocado", "first_name": "Filipe", "last_name": "Ferreira"},
+    {"username": "jsobreira", "first_name": "João", "last_name": "Sobreira"},
+    {"username": "jsoares", "first_name": "José", "last_name": "Soares"},
+    {"username": "lprogano", "first_name": "Leonardo", "last_name": "Proganó"},
+    {"username": "lluzio", "first_name": "Luís", "last_name": "Luzio"},
+    {"username": "moliveira", "first_name": "Márcio", "last_name": "Oliveira"},
+    {"username": "pesteves", "first_name": "Paulo", "last_name": "Esteves"},
+    {"username": "tcovas", "first_name": "Tiago", "last_name": "Covas"},
+]
 
 
 def create_users(apps, schema_editor):
     User = apps.get_model("users", "User")
     password = make_password("a1s2d3-f4")
-
-    for username in USERNAMES:
-        User.objects.create(username=username, password=password)
+    for user_data in USERS:
+        User.objects.create(
+            username=user_data["username"],
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            password=password,
+        )
 
 
 def delete_users(apps, schema_editor):
-    User = apps.get_model("auth", "User")
-    User.objects.filter(username__in=USERNAMES).delete()
+    User = apps.get_model("users", "User")
+    usernames = [user["username"] for user in USERS]
+    User.objects.filter(username__in=usernames).delete()
 
 
 class Migration(migrations.Migration):
