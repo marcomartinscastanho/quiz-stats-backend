@@ -1,22 +1,28 @@
+from difflib import SequenceMatcher, get_close_matches
 from io import BytesIO
 
+from answers.models import UserAnswer
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-
-from answers.models import UserAnswer
 from quizzes.models import Question, Quiz, QuizPart, Topic
+
+
+def is_similar(a: str, b: str, threshold: float = 0.8) -> bool:
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio() >= threshold
+
 
 User = get_user_model()
 
 
-def name_to_username(name: str):
-    parts = name.strip().lower().split()
-    if len(parts) < 2:
-        raise ValueError("Name must contain at least two parts")
-
-    initials = "".join(word[0] for word in parts[:-1])  # all but last
-    last_name = parts[-1]
-    return f"{initials}{last_name}"
+def get_user(player_name: str):
+    users = list(User.objects.all())
+    full_name_map = {f"{u.first_name} {u.last_name}".strip(): u for u in users}
+    full_names = list(full_name_map.keys())
+    match = get_close_matches(player_name, full_names, n=1, cutoff=0.7)
+    if match:
+        matched_name = match[0]
+        user = full_name_map[matched_name]
+        return user
 
 
 def create_quiz(quiz_data: dict):
@@ -51,19 +57,14 @@ def create_quiz(quiz_data: dict):
                 answer=question_data["answer"],
                 is_box=topic.title.startswith("Mystery Box"),
             )
-            # FIXME: only create the question if it doesn't exist yet
-
+            team_name = question_data["team"]
+            if not is_similar(team_name, "José Figueiras"):
+                continue
             player_name = question_data["player"]
             if player_name == "Equipa":  # TODO: support for team-answered questions
                 continue
-            username = name_to_username(player_name)
-            is_correct = bool(question_data["guessed"])
-            print("username", username)
-            try:
-                user = User.objects.get(username=username)
-                # Create UserAnswer
+            user = get_user(player_name)
+            if user:
+                is_correct = bool(question_data["guessed"])
                 UserAnswer.objects.create(user=user, question=question, is_correct=is_correct)
-            except User.DoesNotExist:
-                pass
-
             print(f"    Added question: {question.statement[:30]}...")

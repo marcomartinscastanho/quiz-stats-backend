@@ -79,6 +79,7 @@ def extract_quiz_data(soup: BeautifulSoup) -> list[list[dict]]:
             if b_tag:
                 full_name_and_team = b_tag.get_text(strip=True)
                 player_name = full_name_and_team.split(" - ")[0]
+                team_name = full_name_and_team.split(" - ")[1]
             final_part = parts[-1].strip()
             final_soup = BeautifulSoup(final_part, "html.parser")
             points_tag = final_soup.find("b")
@@ -112,6 +113,7 @@ def extract_quiz_data(soup: BeautifulSoup) -> list[list[dict]]:
                     "question": question,
                     "answer": answer,
                     "player": player_name,
+                    "team": team_name,
                     "guessed": points == "2",
                 }
             )
