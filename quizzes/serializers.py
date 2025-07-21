@@ -74,7 +74,8 @@ class PredictedTopicStatsInputSerializer(serializers.Serializer):
 
 class QuizProgressSerializer(serializers.ModelSerializer):
     progress = serializers.FloatField()
+    correct = serializers.FloatField()
 
     class Meta:
         model = Quiz
-        fields = ["id", "season", "week", "progress"]
+        fields = ["id", "season", "week", "progress", "correct"]
