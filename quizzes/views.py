@@ -3,15 +3,15 @@ from collections import defaultdict
 
 from answers.models import UserAnswer
 from django.contrib.auth import get_user_model
-from django.db.models import Count, F, Prefetch, Q, QuerySet
+from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, QuerySet
 from openai_utils.client import ask_chatgpt
 from openai_utils.loaders import get_prompt
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from quizzes.models import Category, CategoryGroup, Quiz, Topic
+from quizzes.models import Category, CategoryGroup, Question, Quiz, Topic
 from quizzes.serializers import (
     CategoryGroupSerializer,
     CategorySerializer,
@@ -38,6 +38,30 @@ class CategoriesView(ListAPIView):
 class QuizzesView(ListAPIView):
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
+
+
+class QuizView(RetrieveAPIView):
+    queryset = Quiz.objects.all()
+    serializer_class = QuizSerializer
+
+
+class QuizUnansweredQuestionsView(RetrieveAPIView):
+    queryset = Quiz.objects.prefetch_related("parts__topics__questions")
+    serializer_class = QuizSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        answered_qs = UserAnswer.objects.filter(user=user).values_list("question_id", flat=True)
+        unanswered_questions = Question.objects.exclude(id__in=answered_qs)
+        topic_has_unanswered = Exists(unanswered_questions.filter(topic=OuterRef("pk")))
+        topics_with_unanswered = Topic.objects.annotate(has_unanswered=topic_has_unanswered).filter(has_unanswered=True)
+        return Quiz.objects.prefetch_related(
+            Prefetch(
+                "parts__topics",
+                queryset=topics_with_unanswered.prefetch_related(Prefetch("questions", queryset=unanswered_questions)),
+            )
+        ).order_by("season", "week")
 
 
 class CategoryUserStatsView(APIView):
@@ -174,6 +198,9 @@ class ListQuizProgressView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         user_answered_set = set(UserAnswer.objects.filter(user=user).values_list("question_id", flat=True))
+        user_correct_set = set(
+            UserAnswer.objects.filter(user=user, is_correct=True).values_list("question_id", flat=True)
+        )
         quizzes = Quiz.objects.prefetch_related(Prefetch("parts__topics__questions", to_attr="all_questions")).order_by(
             "season", "week"
         )
@@ -186,8 +213,15 @@ class ListQuizProgressView(ListAPIView):
                         questions.add(q.id)
             if not questions:
                 progress = 0.0
+                correctness = 0.0
             else:
                 answered = questions & user_answered_set
+                correct = questions & user_correct_set
                 progress = round((len(answered) / len(questions)) * 100, 1)
+                if not answered:
+                    correctness = 0.0
+                else:
+                    correctness = round((len(correct) / len(answered)) * 100, 1)
             quiz.progress = progress
+            quiz.correct = correctness
         return quizzes
