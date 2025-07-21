@@ -1,12 +1,13 @@
+from answers.models import UserAnswer
 from django.contrib.auth import get_user_model
+from quizzes.models import CategoryGroup
+from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from answers.models import UserAnswer
-from quizzes.models import CategoryGroup
-from users.serializers import GroupSerializer, UserDetailSerializer
+from users.serializers import GroupSerializer, UserDetailSerializer, UserListSerializer
 
 User = get_user_model()
 
@@ -17,6 +18,12 @@ class CurrentUserDetailView(APIView):
     def get(self, *args, **kwargs):
         serializer = UserDetailSerializer(self.request.user)
         return Response(serializer.data)
+
+
+class UserListView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserListSerializer
+    queryset = User.objects.exclude(is_staff=True).order_by("id")
 
 
 class MyGroupsView(APIView):
@@ -77,18 +84,13 @@ class UserCategoryGroupStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, *args, **kwargs):
-        user = self.request.user
-
         # Load all category groups
-        all_groups = CategoryGroup.objects.all()
+        all_groups = CategoryGroup.objects.all().order_by("id")
         group_stats = {group.name: {"correct": 0, "total": 0} for group in all_groups}
 
         # Fetch user answers and prefetch related categories and their groups
-        user_answers = (
-            UserAnswer.objects.filter(user=user)
-            .select_related("question")
-            .prefetch_related("question__categories__group")
-        )
+        identifier = kwargs["identifier"]
+        user_answers = self._get_user_answers_for_identifier(identifier)
 
         for ua in user_answers:
             for category in ua.question.categories.all():
@@ -113,3 +115,19 @@ class UserCategoryGroupStatsView(APIView):
         )
 
         return Response(response)
+
+    def _get_user_answers_for_identifier(self, identifier):
+        if identifier == "team":
+            return UserAnswer.objects.select_related("question").prefetch_related("question__categories__group")
+        if identifier == "me":
+            user = self.request.user
+        else:
+            try:
+                user = User.objects.get(id=identifier)
+            except User.DoesNotExist:
+                raise NotFound(detail="User not found.")
+        return (
+            UserAnswer.objects.filter(user=user)
+            .select_related("question")
+            .prefetch_related("question__categories__group")
+        )

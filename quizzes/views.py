@@ -11,8 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from quizzes.models import Category, Quiz, Topic
+from quizzes.models import Category, CategoryGroup, Quiz, Topic
 from quizzes.serializers import (
+    CategoryGroupSerializer,
     CategorySerializer,
     PredictedTopicStatsInputSerializer,
     QuizProgressSerializer,
@@ -21,6 +22,12 @@ from quizzes.serializers import (
 )
 
 User = get_user_model()
+
+
+class CategoryGroupListView(ListAPIView):
+    queryset = CategoryGroup.objects.all().order_by("id")
+    serializer_class = CategoryGroupSerializer
+    permission_classes = []
 
 
 class CategoriesView(ListAPIView):

@@ -1,9 +1,15 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from quizzes.models import Category, Question, Quiz, QuizPart, Topic
+from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
 
 User = get_user_model()
+
+
+class CategoryGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CategoryGroup
+        fields = ["id", "name"]
 
 
 class CategorySerializer(serializers.ModelSerializer):
