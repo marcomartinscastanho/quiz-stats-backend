@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "verbose_name_plural": "categories",
-                "constraints": [models.UniqueConstraint(fields=("name", "group"), name="unique_quiz_season_week")],
+                "constraints": [models.UniqueConstraint(fields=("name", "group"), name="unique_category_name_group")],
             },
         ),
         migrations.CreateModel(
