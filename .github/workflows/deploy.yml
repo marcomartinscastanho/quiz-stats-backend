@@ -22,7 +22,7 @@ jobs:
 
       - name: Deploy backend
         run: |
-          ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             if [ ! -d ~/qs-backend ]; then
               git clone git@github.com:marcomartinscastanho/quiz-stats-backend.git ~/qs-backend
             fi
