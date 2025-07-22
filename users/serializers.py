@@ -6,9 +6,11 @@ User = get_user_model()
 
 
 class UserListSerializer(serializers.ModelSerializer):
+    total_answers = serializers.IntegerField()
+
     class Meta:
         model = User
-        fields = ["id", "username", "full_name"]
+        fields = ["id", "username", "full_name", "total_answers"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
