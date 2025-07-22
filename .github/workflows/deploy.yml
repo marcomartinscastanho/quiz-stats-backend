@@ -22,8 +22,11 @@ jobs:
 
       - name: Deploy backend
         run: |
-          ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/quiz-stats-backend
+          ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            if [ ! -d ~/qs-backend ]; then
+              git clone git@github.com:marcomartinscastanho/quiz-stats-backend.git ~/qs-backend
+            fi
+            cd ~/qs-backend
             git pull origin main
             docker compose -f docker-compose.backend.yml up --build -d
           EOF
