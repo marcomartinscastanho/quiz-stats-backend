@@ -1,12 +1,13 @@
-from answers.models import UserAnswer
 from django.contrib.auth import get_user_model
-from quizzes.models import CategoryGroup
+from django.db.models import Count
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from answers.models import UserAnswer
+from quizzes.models import CategoryGroup
 from users.serializers import GroupSerializer, UserDetailSerializer, UserListSerializer
 
 User = get_user_model()
@@ -23,7 +24,11 @@ class CurrentUserDetailView(APIView):
 class UserListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserListSerializer
-    queryset = User.objects.exclude(is_staff=True).order_by("id")
+
+    def get_queryset(self):
+        return (
+            User.objects.exclude(is_staff=True).annotate(total_answers=Count("useranswer")).order_by("-total_answers")
+        )
 
 
 class MyGroupsView(APIView):
