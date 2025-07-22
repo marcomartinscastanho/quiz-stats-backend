@@ -6,28 +6,27 @@ from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, To
 User = get_user_model()
 
 
-class CategoryGroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CategoryGroup
-        fields = ["id", "name"]
-
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name"]
 
 
+class CategoryGroupSerializer(serializers.ModelSerializer):
+    categories = CategorySerializer(many=True)
+
+    class Meta:
+        model = CategoryGroup
+        fields = ["id", "name", "categories"]
+
+
 class QuestionSerializer(serializers.ModelSerializer):
-    categories = serializers.SerializerMethodField()
+    categories = CategorySerializer(many=True)
     xP = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
         fields = ["id", "statement", "answer", "categories", "xP"]
-
-    def get_categories(self, obj: Question):
-        return list(obj.categories.values_list("name", flat=True))
 
     def get_xP(self, obj: Question):
         return round(obj.xP, 2) if obj.xP is not None else None
