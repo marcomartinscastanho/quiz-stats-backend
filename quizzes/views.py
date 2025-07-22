@@ -1,21 +1,22 @@
 import random
 from collections import defaultdict
 
-from answers.models import UserAnswer
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, QuerySet
-from openai_utils.client import ask_chatgpt
-from openai_utils.loaders import get_prompt
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from answers.models import UserAnswer
+from openai_utils.client import ask_chatgpt
+from openai_utils.loaders import get_prompt
 from quizzes.models import Category, CategoryGroup, Question, Quiz, Topic
 from quizzes.serializers import (
     CategoryGroupSerializer,
     CategorySerializer,
     PredictedTopicStatsInputSerializer,
+    QuestionCategoryUpdateSerializer,
     QuizProgressSerializer,
     QuizSerializer,
     TopicSerializer,
@@ -225,3 +226,17 @@ class ListQuizProgressView(ListAPIView):
             quiz.progress = progress
             quiz.correct = correctness
         return quizzes
+
+
+class UpdateQuestionCategoriesView(UpdateAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionCategoryUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def update(self, *args, **kwargs):
+        question = self.get_object()
+        serializer = self.get_serializer(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        category_ids = serializer.validated_data["category_ids"]
+        question.categories.set(category_ids)
+        return Response({"detail": "Categories updated successfully."})

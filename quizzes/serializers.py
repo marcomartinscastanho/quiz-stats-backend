@@ -78,3 +78,13 @@ class QuizProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
         fields = ["id", "season", "week", "progress", "correct"]
+
+
+class QuestionCategoryUpdateSerializer(serializers.Serializer):
+    category_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), allow_empty=False)
+
+    def validate_category_ids(self, value):
+        existing_ids = set(Category.objects.filter(id__in=value).values_list("id", flat=True))
+        if len(existing_ids) != len(set(value)):
+            raise serializers.ValidationError("One or more category IDs are invalid.")
+        return value

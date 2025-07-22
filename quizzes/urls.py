@@ -2,6 +2,7 @@ from django.urls import path
 
 from quizzes.views import (
     CategoriesView,
+    CategoryGroupListView,
     CategoryUserStatsView,
     ListQuizProgressView,
     PredictedTopicStatsView,
@@ -9,6 +10,7 @@ from quizzes.views import (
     QuizView,
     QuizzesView,
     RandomUnansweredTopicView,
+    UpdateQuestionCategoriesView,
 )
 
 urlpatterns = [
@@ -17,8 +19,14 @@ urlpatterns = [
     path("<int:pk>/", QuizView.as_view(), name="get-quizzes"),
     path("<int:pk>/unanswered/", QuizUnansweredQuestionsView.as_view(), name="get-unanswered-quiz"),
     path("categories/", CategoriesView.as_view(), name="list-all-categories"),
+    path("categories/groups/", CategoryGroupListView.as_view(), name="list-all-groups"),
     path("categories/users/stats/", CategoryUserStatsView.as_view(), name="category-user-stats"),
     path("progress/", ListQuizProgressView.as_view(), name="quiz-progress"),
     path("stats/predict/", PredictedTopicStatsView.as_view(), name="predict-stats"),
     path("topics/random/", RandomUnansweredTopicView.as_view(), name="random-unanswered-topic"),
+    path(
+        "questions/<int:pk>/categories/update/",
+        UpdateQuestionCategoriesView.as_view(),
+        name="update-question-categories",
+    ),
 ]
