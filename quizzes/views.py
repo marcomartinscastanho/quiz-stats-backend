@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from answers.models import UserAnswer
 from openai_utils.client import ask_chatgpt
 from openai_utils.loaders import get_prompt
-from quizzes.models import Category, CategoryGroup, Question, Quiz, Topic
+from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
 from quizzes.serializers import (
     CategoryGroupSerializer,
     CategorySerializer,
@@ -37,8 +37,22 @@ class CategoriesView(ListAPIView):
 
 
 class QuizzesView(ListAPIView):
-    queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
+
+    def get_queryset(self):
+        return Quiz.objects.prefetch_related(
+            Prefetch(
+                "parts",
+                queryset=QuizPart.objects.prefetch_related(
+                    Prefetch(
+                        "topics",
+                        queryset=Topic.objects.prefetch_related(
+                            Prefetch("questions", queryset=Question.objects.prefetch_related("categories"))
+                        ),
+                    )
+                ),
+            )
+        )
 
 
 class QuizView(RetrieveAPIView):
