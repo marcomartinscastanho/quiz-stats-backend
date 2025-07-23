@@ -11,13 +11,27 @@ from quizzes.management.commands.utils.html import (
 from quizzes.management.commands.utils.ppt import create_ppt
 
 
+def extract_season_week(url):
+    match = re.search(r"QNpt(\d+)[_-]([^.?#]+)", url)
+    if not match:
+        raise ValueError(f"Could not extract season and week from: {url}")
+    season = int(match.group(1))
+    raw_week = match.group(2)
+    # If week starts with 'I's (e.g., "II3"), strip them off
+    week = re.sub(r"^I+", "", raw_week)
+    # If week starts with a letter and is not numeric, replace leading non-digit with 'G'
+    if re.match(r"^\D\d", week):
+        week = "G" + week[1:]
+    return season, week
+
+
 def get_quiz_data(url: str):
     html_content = fetch_page(url)
     soup = parse_html(html_content)
     page_title = extract_page_title(soup)
     quiz_data = extract_quiz_data(soup)
     sorted_data = sort_quiz_data(quiz_data)
-    season, week = [int(n) for n in re.findall(r"\d+", page_title)]
+    season, week = extract_season_week(url)
     quiz = {"season": season, "week": week}
     parts = []
     for i, part_data in enumerate(sorted_data, 1):

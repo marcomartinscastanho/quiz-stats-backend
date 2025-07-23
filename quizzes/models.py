@@ -4,7 +4,7 @@ from django.db.models import Count, Q, QuerySet
 
 class Quiz(models.Model):
     season = models.PositiveSmallIntegerField()
-    week = models.PositiveSmallIntegerField()
+    week = models.CharField(max_length=10)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["season", "week"], name="unique_quiz_season_week")]

@@ -33,8 +33,11 @@ def extract_page_title(soup: BeautifulSoup):
 
 
 def find_jf_game(soup: BeautifulSoup):
-    for div_container in soup.find_all("div", class_="level3"):
-        script_tag = div_container.find("script", type="application/json")
+    whole_json = {}
+    excluded_ids = {"mvp-global", "mvp-jornada", "temas"}
+    divs = [div for div in soup.find_all("div", class_="level3") if div.get("id") not in excluded_ids]
+    for div in divs:
+        script_tag = div.find("script", type="application/json")
         if not script_tag:
             continue
         try:

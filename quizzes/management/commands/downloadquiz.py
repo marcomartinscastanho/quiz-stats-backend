@@ -1,3 +1,5 @@
+import traceback
+
 from django.core.management.base import BaseCommand, CommandError
 
 from quizzes.management.commands.utils.data_creation import create_quiz
@@ -38,5 +40,6 @@ class Command(BaseCommand):
             except HtmlException as e:
                 self.stderr.write(f"Error fetching page {url}: {e}")
             except Exception as e:
+                self.stderr.write(traceback.format_exc())
                 self.stderr.write(f"Error processing {url}: {e}")
         self.stdout.write(self.style.SUCCESS("Quiz import complete!"))
