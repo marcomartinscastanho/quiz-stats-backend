@@ -5,8 +5,7 @@ from answers.models import UserAnswer
 
 @admin.register(UserAnswer)
 class UserAnswerAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "question", "is_correct", "created_at", "updated_at")
-    list_display_links = ("id", "question")
-    list_filter = ("user", "is_correct", "created_at")
-    search_fields = ("user__username", "question__statement")
+    list_display = ("id", "user", "question__topic__quiz_part__quiz", "question", "is_correct", "updated_at")
+    list_filter = ("user", "question__topic__quiz_part__quiz", "is_correct", "created_at")
+    search_fields = ("question__statement",)
     ordering = ("-created_at",)
