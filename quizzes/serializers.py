@@ -22,26 +22,18 @@ class CategoryGroupSerializer(serializers.ModelSerializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True)
-    xP = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
-        fields = ["id", "statement", "answer", "categories", "xP"]
-
-    def get_xP(self, obj: Question):
-        return round(obj.xP, 2) if obj.xP is not None else None
+        fields = ["id", "statement", "answer", "categories"]
 
 
 class TopicSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True)
-    xT = serializers.SerializerMethodField()
 
     class Meta:
         model = Topic
-        fields = ["title", "questions", "xT"]
-
-    def get_xT(self, obj: Topic):
-        return round(obj.xT, 2) if obj.xT is not None else None
+        fields = ["title", "questions"]
 
 
 class QuizPartSerializer(serializers.ModelSerializer):
