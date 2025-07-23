@@ -34,8 +34,12 @@ def extract_page_title(soup: BeautifulSoup):
 
 def find_jf_game(soup: BeautifulSoup):
     whole_json = {}
-    excluded_ids = {"mvp-global", "mvp-jornada", "temas", "classificação"}
-    divs = [div for div in soup.find_all("div", class_="level3") if div.get("id") not in excluded_ids]
+    excluded_prefixes = {"mvp-global", "mvp-jornada", "temas", "classificação"}
+    divs = [
+        div
+        for div in soup.find_all("div", class_="level3")
+        if div.get("id") and not any(div["id"].startswith(prefix) for prefix in excluded_prefixes)
+    ]
     for div in divs:
         script_tag = div.find("script", type="application/json")
         if not script_tag:
