@@ -212,33 +212,34 @@ class ListQuizProgressView(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        user_answered_set = set(UserAnswer.objects.filter(user=user).values_list("question_id", flat=True))
-        user_correct_set = set(
-            UserAnswer.objects.filter(user=user, is_correct=True).values_list("question_id", flat=True)
+        quizzes = (
+            Quiz.objects.prefetch_related("parts__topics__questions")
+            .annotate(
+                total_questions=Count("parts__topics__questions", distinct=True),
+                total_answered=Count(
+                    "parts__topics__questions__useranswer",
+                    filter=Q(parts__topics__questions__useranswer__user=user),
+                    distinct=True,
+                ),
+                total_correct=Count(
+                    "parts__topics__questions__useranswer",
+                    filter=Q(
+                        parts__topics__questions__useranswer__user=user,
+                        parts__topics__questions__useranswer__is_correct=True,
+                    ),
+                    distinct=True,
+                ),
+            )
+            .order_by("season", "week")
         )
-        quizzes = Quiz.objects.prefetch_related(Prefetch("parts__topics__questions", to_attr="all_questions")).order_by(
-            "season", "week"
-        )
+        # Add computed fields
         for quiz in quizzes:
-            # Collect all questions from all quiz parts
-            questions = set()
-            for part in quiz.parts.all():
-                for topic in part.topics.all():
-                    for q in topic.questions.all():
-                        questions.add(q.id)
-            if not questions:
-                progress = 0.0
-                correctness = 0.0
-            else:
-                answered = questions & user_answered_set
-                correct = questions & user_correct_set
-                progress = round((len(answered) / len(questions)) * 100, 1)
-                if not answered:
-                    correctness = 0.0
-                else:
-                    correctness = round((len(correct) / len(answered)) * 100, 1)
-            quiz.progress = progress
-            quiz.correct = correctness
+            tq = quiz.total_questions
+            ta = quiz.total_answered
+            tc = quiz.total_correct
+            quiz.progress = round((ta / tq) * 100, 1) if tq else 0.0
+            quiz.correct = round((tc / ta) * 100, 1) if ta else 0.0
+
         return quizzes
 
 
