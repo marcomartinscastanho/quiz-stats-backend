@@ -3,6 +3,7 @@ set -e
 
 echo "Running migrations..."
 python manage.py migrate
+python manage.py collectstatic --noinput
 
 echo "Checking for default superuser..."
 

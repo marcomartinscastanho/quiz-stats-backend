@@ -34,7 +34,7 @@ def extract_page_title(soup: BeautifulSoup):
 
 def find_jf_game(soup: BeautifulSoup):
     whole_json = {}
-    excluded_ids = {"mvp-global", "mvp-jornada", "temas"}
+    excluded_ids = {"mvp-global", "mvp-jornada", "temas", "classificação"}
     divs = [div for div in soup.find_all("div", class_="level3") if div.get("id") not in excluded_ids]
     for div in divs:
         script_tag = div.find("script", type="application/json")
@@ -59,7 +59,6 @@ def extract_quiz_data(soup: BeautifulSoup) -> list[list[dict]]:
     if not whole_json:
         print("No matching div with target title found.")
         return []
-
     try:
         quiz_data = whole_json["x"]["data"]
     except KeyError as e:
