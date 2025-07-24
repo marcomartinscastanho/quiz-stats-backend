@@ -1,10 +1,27 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from rest_framework.generics import GenericAPIView
+from django.db.models import Count, Prefetch
+from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 
 from answers.models import UserAnswer
 from quizzes.mixins import CategoryGroupStatsMixin
 from teams.permissions import IsGroupMember
+from teams.serializers import TeamSerializer
+
+User = get_user_model()
+
+
+class TeamView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Group.objects.all().prefetch_related("user_set")
+    serializer_class = TeamSerializer
+
+    def get_queryset(self):
+        users_qs = (
+            User.objects.exclude(is_staff=True).annotate(total_answers=Count("useranswer")).order_by("-total_answers")
+        )
+        return Group.objects.all().prefetch_related(Prefetch("user_set", queryset=users_qs))
 
 
 class TeamCategoryGroupStatsView(CategoryGroupStatsMixin, GenericAPIView):

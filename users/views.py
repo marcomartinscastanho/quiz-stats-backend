@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from answers.models import UserAnswer
 from quizzes.mixins import CategoryGroupStatsMixin
-from users.serializers import UserDetailSerializer, UserListSerializer
+from users.serializers import UserDetailSerializer, UserShortSerializer
 
 User = get_user_model()
 
@@ -22,7 +22,7 @@ class CurrentUserDetailView(APIView):
 
 class UserListView(ListAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = UserListSerializer
+    serializer_class = UserShortSerializer
 
     def get_queryset(self):
         return (

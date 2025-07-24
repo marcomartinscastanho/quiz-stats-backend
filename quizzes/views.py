@@ -52,12 +52,8 @@ class QuizUnansweredQuestionsView(RetrieveAPIView):
         unanswered_questions = Question.objects.exclude(id__in=answered_qs)
         topic_has_unanswered = Exists(unanswered_questions.filter(topic=OuterRef("pk")))
         topics_with_unanswered = Topic.objects.annotate(has_unanswered=topic_has_unanswered).filter(has_unanswered=True)
-        return Quiz.objects.prefetch_related(
-            Prefetch(
-                "parts__topics",
-                queryset=topics_with_unanswered.prefetch_related(Prefetch("questions", queryset=unanswered_questions)),
-            )
-        ).order_by("season", "week")
+        topics_qs = topics_with_unanswered.prefetch_related(Prefetch("questions", queryset=unanswered_questions))
+        return Quiz.objects.prefetch_related(Prefetch("parts__topics", queryset=topics_qs)).order_by("season", "week")
 
 
 class CategoryUserStatsView(APIView):
