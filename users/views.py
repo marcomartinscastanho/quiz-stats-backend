@@ -12,14 +12,6 @@ from users.serializers import UserDetailSerializer, UserShortSerializer
 User = get_user_model()
 
 
-class CurrentUserDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, *args, **kwargs):
-        serializer = UserDetailSerializer(self.request.user)
-        return Response(serializer.data)
-
-
 class UserListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserShortSerializer
@@ -28,6 +20,14 @@ class UserListView(ListAPIView):
         return (
             User.objects.exclude(is_staff=True).annotate(total_answers=Count("useranswer")).order_by("-total_answers")
         )
+
+
+class CurrentUserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        serializer = UserDetailSerializer(self.request.user)
+        return Response(serializer.data)
 
 
 class UserCategoryGroupStatsView(CategoryGroupStatsMixin, GenericAPIView):
