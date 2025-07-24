@@ -8,15 +8,13 @@ from quizzes.views import (
     PredictedTopicStatsView,
     QuizUnansweredQuestionsView,
     QuizView,
-    QuizzesView,
     RandomUnansweredTopicView,
     UpdateQuestionCategoriesView,
 )
 
 urlpatterns = [
     # api/quizzes/
-    path("", QuizzesView.as_view(), name="list-all-quizzes"),
-    path("<int:pk>/", QuizView.as_view(), name="get-quizzes"),
+    path("<int:pk>/", QuizView.as_view(), name="get-quiz"),
     path("<int:pk>/unanswered/", QuizUnansweredQuestionsView.as_view(), name="get-unanswered-quiz"),
     path("categories/", CategoriesView.as_view(), name="list-all-categories"),
     path("categories/groups/", CategoryGroupListView.as_view(), name="list-all-groups"),

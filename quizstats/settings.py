@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     # own apps
     "answers",
     "quizzes",
+    "teams",
     "users",
 ]
 

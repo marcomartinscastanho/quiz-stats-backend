@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from answers.models import UserAnswer
 from openai_utils.client import ask_chatgpt
 from openai_utils.loaders import get_prompt
-from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
+from quizzes.models import Category, CategoryGroup, Question, Quiz, Topic
 from quizzes.serializers import (
     CategoryGroupSerializer,
     CategorySerializer,
@@ -23,36 +23,6 @@ from quizzes.serializers import (
 )
 
 User = get_user_model()
-
-
-class CategoryGroupListView(ListAPIView):
-    queryset = CategoryGroup.objects.all().order_by("id")
-    serializer_class = CategoryGroupSerializer
-    permission_classes = []
-
-
-class CategoriesView(ListAPIView):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-
-
-class QuizzesView(ListAPIView):
-    serializer_class = QuizSerializer
-
-    def get_queryset(self):
-        return Quiz.objects.prefetch_related(
-            Prefetch(
-                "parts",
-                queryset=QuizPart.objects.prefetch_related(
-                    Prefetch(
-                        "topics",
-                        queryset=Topic.objects.prefetch_related(
-                            Prefetch("questions", queryset=Question.objects.prefetch_related("categories"))
-                        ),
-                    )
-                ),
-            )
-        )
 
 
 class QuizView(RetrieveAPIView):
@@ -71,12 +41,19 @@ class QuizUnansweredQuestionsView(RetrieveAPIView):
         unanswered_questions = Question.objects.exclude(id__in=answered_qs)
         topic_has_unanswered = Exists(unanswered_questions.filter(topic=OuterRef("pk")))
         topics_with_unanswered = Topic.objects.annotate(has_unanswered=topic_has_unanswered).filter(has_unanswered=True)
-        return Quiz.objects.prefetch_related(
-            Prefetch(
-                "parts__topics",
-                queryset=topics_with_unanswered.prefetch_related(Prefetch("questions", queryset=unanswered_questions)),
-            )
-        ).order_by("season", "week")
+        topics_qs = topics_with_unanswered.prefetch_related(Prefetch("questions", queryset=unanswered_questions))
+        return Quiz.objects.prefetch_related(Prefetch("parts__topics", queryset=topics_qs)).order_by("season", "week")
+
+
+class CategoriesView(ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class CategoryGroupListView(ListAPIView):
+    queryset = CategoryGroup.objects.all().order_by("id")
+    serializer_class = CategoryGroupSerializer
+    permission_classes = []
 
 
 class CategoryUserStatsView(APIView):
@@ -116,24 +93,41 @@ class CategoryUserStatsView(APIView):
         return Response(result)
 
 
-class RandomUnansweredTopicView(APIView):
+class ListQuizProgressView(ListAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = QuizProgressSerializer
 
-    def get(self, *args, **kwargs):
+    def get_queryset(self):
         user = self.request.user
-        # Annotate topics with total and answered questions
-        topics = Topic.objects.annotate(
-            total_questions=Count("questions", distinct=True),
-            answered_questions=Count(
-                "questions__useranswer", filter=Q(questions__useranswer__user=user), distinct=True
-            ),
-        ).filter(answered_questions__lt=F("total_questions"))
-        if not topics.exists():
-            return Response({"message": "No unanswered topics left", "result": None})
-        # Pick a random topic from the filtered queryset
-        topic = random.choice(list(topics))
-        serializer = TopicSerializer(topic)
-        return Response({"message": "Random unanswered topic", "result": serializer.data})
+        quizzes = (
+            Quiz.objects.prefetch_related("parts__topics__questions")
+            .annotate(
+                total_questions=Count("parts__topics__questions", distinct=True),
+                total_answered=Count(
+                    "parts__topics__questions__useranswer",
+                    filter=Q(parts__topics__questions__useranswer__user=user),
+                    distinct=True,
+                ),
+                total_correct=Count(
+                    "parts__topics__questions__useranswer",
+                    filter=Q(
+                        parts__topics__questions__useranswer__user=user,
+                        parts__topics__questions__useranswer__is_correct=True,
+                    ),
+                    distinct=True,
+                ),
+            )
+            .order_by("season", "week")
+        )
+        # Add computed fields
+        for quiz in quizzes:
+            tq = quiz.total_questions
+            ta = quiz.total_answered
+            tc = quiz.total_correct
+            quiz.progress = round((ta / tq) * 100, 1) if tq else 0.0
+            quiz.correct = round((tc / ta) * 100, 1) if ta else 0.0
+
+        return quizzes
 
 
 class PredictedTopicStatsView(APIView):
@@ -206,41 +200,24 @@ class PredictedTopicStatsView(APIView):
         return categories.filter(name__in=category_names)
 
 
-class ListQuizProgressView(ListAPIView):
+class RandomUnansweredTopicView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = QuizProgressSerializer
 
-    def get_queryset(self):
+    def get(self, *args, **kwargs):
         user = self.request.user
-        quizzes = (
-            Quiz.objects.prefetch_related("parts__topics__questions")
-            .annotate(
-                total_questions=Count("parts__topics__questions", distinct=True),
-                total_answered=Count(
-                    "parts__topics__questions__useranswer",
-                    filter=Q(parts__topics__questions__useranswer__user=user),
-                    distinct=True,
-                ),
-                total_correct=Count(
-                    "parts__topics__questions__useranswer",
-                    filter=Q(
-                        parts__topics__questions__useranswer__user=user,
-                        parts__topics__questions__useranswer__is_correct=True,
-                    ),
-                    distinct=True,
-                ),
-            )
-            .order_by("season", "week")
-        )
-        # Add computed fields
-        for quiz in quizzes:
-            tq = quiz.total_questions
-            ta = quiz.total_answered
-            tc = quiz.total_correct
-            quiz.progress = round((ta / tq) * 100, 1) if tq else 0.0
-            quiz.correct = round((tc / ta) * 100, 1) if ta else 0.0
-
-        return quizzes
+        # Annotate topics with total and answered questions
+        topics = Topic.objects.annotate(
+            total_questions=Count("questions", distinct=True),
+            answered_questions=Count(
+                "questions__useranswer", filter=Q(questions__useranswer__user=user), distinct=True
+            ),
+        ).filter(answered_questions__lt=F("total_questions"))
+        if not topics.exists():
+            return Response({"message": "No unanswered topics left", "result": None})
+        # Pick a random topic from the filtered queryset
+        topic = random.choice(list(topics))
+        serializer = TopicSerializer(topic)
+        return Response({"message": "Random unanswered topic", "result": serializer.data})
 
 
 class UpdateQuestionCategoriesView(UpdateAPIView):

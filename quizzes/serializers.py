@@ -80,3 +80,10 @@ class QuestionCategoryUpdateSerializer(serializers.Serializer):
         if len(existing_ids) != len(set(value)):
             raise serializers.ValidationError("One or more category IDs are invalid.")
         return value
+
+
+class CategoryGroupStatsSerializer(serializers.Serializer):
+    group_id = serializers.IntegerField()
+    group_name = serializers.CharField()
+    xC = serializers.FloatField()
+    answered = serializers.IntegerField()
