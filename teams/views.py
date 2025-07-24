@@ -14,7 +14,6 @@ User = get_user_model()
 
 class TeamView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = Group.objects.all().prefetch_related("user_set")
     serializer_class = TeamSerializer
 
     def get_queryset(self):

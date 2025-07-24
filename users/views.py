@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from answers.models import UserAnswer
 from quizzes.mixins import CategoryGroupStatsMixin
+from teams.serializers import TeamSerializer
 from users.serializers import UserDetailSerializer, UserShortSerializer
 
 User = get_user_model()
@@ -28,6 +29,17 @@ class MeView(APIView):
     def get(self, *args, **kwargs):
         serializer = UserDetailSerializer(self.request.user)
         return Response(serializer.data)
+
+
+class MyTeamsView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TeamSerializer
+
+    def get_queryset(self):
+        users_qs = (
+            User.objects.exclude(is_staff=True).annotate(total_answers=Count("useranswer")).order_by("-total_answers")
+        )
+        return self.request.user.groups.prefetch_related(Prefetch("user_set", queryset=users_qs))
 
 
 class UserCategoryGroupStatsView(CategoryGroupStatsMixin, GenericAPIView):
