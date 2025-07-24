@@ -30,6 +30,9 @@ jobs:
               git clone git@github.com:marcomartinscastanho/quiz-stats-backend.git ~/qs-backend
             fi
 
+            cd ~/qs-backend
+            git pull origin main
+
             # Make sure deploy script is executable
             chmod +x ~/qs-backend/deploy_backend.sh
 
