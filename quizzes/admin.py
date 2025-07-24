@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from quizzes.models import Category, Question, Quiz, QuizPart, Topic
+from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
 
 
 @admin.register(Quiz)
@@ -26,9 +26,9 @@ class TopicAdmin(admin.ModelAdmin):
     search_fields = ("title",)
 
 
-class QuestionInline(admin.StackedInline):
-    model = Question.categories.through
-    extra = 0
+@admin.register(CategoryGroup)
+class CategoryGroupAdmin(admin.ModelAdmin):
+    list_display = ["name"]
 
 
 @admin.register(Category)
@@ -37,7 +37,6 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ["group"]
     search_fields = ["name"]
     ordering = ["group__name", "name"]
-    inlines = [QuestionInline]
 
 
 @admin.register(Question)
