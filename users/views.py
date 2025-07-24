@@ -22,7 +22,7 @@ class UserListView(ListAPIView):
         )
 
 
-class CurrentUserDetailView(APIView):
+class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, *args, **kwargs):
