@@ -23,10 +23,16 @@ jobs:
       - name: Deploy backend
         run: |
           ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+
+            # Clone repo if not exists
             if [ ! -d ~/qs-backend ]; then
               git clone git@github.com:marcomartinscastanho/quiz-stats-backend.git ~/qs-backend
             fi
-            cd ~/qs-backend
-            git pull origin main
-            docker compose -f docker-compose.prod.yml up --build -d
+
+            # Make sure deploy script is executable
+            chmod +x ~/qs-backend/deploy_backend.sh
+
+            # Run deployment script
+            ~/qs-backend/deploy_backend.sh
           EOF
