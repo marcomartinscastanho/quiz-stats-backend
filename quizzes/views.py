@@ -140,12 +140,11 @@ class TopicCategorizationView(GenericAPIView):
         first_half = serializer.validated_data["first_half_topics"]
         second_half = serializer.validated_data["second_half_topics"]
 
-        categories = list(Category.objects.values_list("name", flat=True))
-        first_half_result = classify_topics_list(first_half, categories)
-        second_half_result = classify_topics_list(second_half, categories)
+        first_half_result = classify_topics_list(first_half)
+        second_half_result = classify_topics_list(second_half)
 
         return Response(
-            {"first_half_topics": first_half_result, "second_half_topics": second_half_result},
+            {"first_half_categories": first_half_result, "second_half_categories": second_half_result},
             status=status.HTTP_200_OK,
         )
 

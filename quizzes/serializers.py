@@ -52,9 +52,16 @@ class QuizSerializer(serializers.ModelSerializer):
         fields = ["season", "week", "parts"]
 
 
+class CategorizedTopicSerializer(serializers.Serializer):
+    topic = serializers.CharField()
+    categories = CategorySerializer(many=True)
+
+
 class TopicCategorizationSerializer(serializers.Serializer):
-    first_half_topics = serializers.ListField(child=serializers.CharField(), allow_empty=False)
-    second_half_topics = serializers.ListField(child=serializers.CharField(), allow_empty=False)
+    first_half_topics = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
+    second_half_topics = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
+    first_half_categories = serializers.ListField(child=CategorizedTopicSerializer(), read_only=True)
+    second_half_categories = serializers.ListField(child=CategorizedTopicSerializer(), read_only=True)
 
 
 class QuizProgressSerializer(serializers.ModelSerializer):
