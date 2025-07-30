@@ -1,4 +1,0 @@
-This is a topic on a quiz game: `{topic}`.
-I need you to tell me which of these categories it is more likely to be about (max 2 categories): `{categories}`
-Give me just the list of categories, comma separated, nothing else.
-Example: `Astronomy,Politics`

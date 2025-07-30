@@ -5,10 +5,10 @@ from quizzes.views import (
     CategoryGroupListView,
     CategoryUserStatsView,
     ListQuizProgressView,
-    PredictedTopicStatsView,
     QuizUnansweredQuestionsView,
     QuizView,
     RandomUnansweredTopicView,
+    TopicCategorizationView,
     UpdateQuestionCategoriesView,
 )
 
@@ -19,8 +19,8 @@ urlpatterns = [
     path("categories/", CategoriesView.as_view(), name="list-all-categories"),
     path("categories/groups/", CategoryGroupListView.as_view(), name="list-all-groups"),
     path("categories/users/stats/", CategoryUserStatsView.as_view(), name="category-user-stats"),
+    path("predictor/topics/categorize/", TopicCategorizationView.as_view(), name="categorize-topics"),
     path("progress/", ListQuizProgressView.as_view(), name="quiz-progress"),
-    path("stats/predict/", PredictedTopicStatsView.as_view(), name="predict-stats"),
     path("topics/random/", RandomUnansweredTopicView.as_view(), name="random-unanswered-topic"),
     path(
         "questions/<int:pk>/categories/update/",

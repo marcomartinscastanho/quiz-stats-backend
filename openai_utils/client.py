@@ -6,7 +6,7 @@ from openai_utils.utils import get_cache_key
 client = OpenAI()
 
 
-def ask_chatgpt(prompt: str):
+def ask_chatgpt(prompt: str, model="gpt-4.1-nano"):
     if not prompt:
         return
 
@@ -16,7 +16,7 @@ def ask_chatgpt(prompt: str):
         return cached_response
 
     instructions = "You are a quiz assistant that answer with few words"
-    response = client.responses.create(model="gpt-4.1-nano", instructions=instructions, input=prompt)
+    response = client.responses.create(model=model, instructions=instructions, input=prompt)
 
     output = response.output_text
     cache.set(cache_key, output, timeout=7 * 24 * 60 * 60)  # 7 days

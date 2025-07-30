@@ -1,0 +1,29 @@
+You are a classification assistant.
+
+Below is a list of predefined categories. This list is final — do not change, reword, or invent new ones:
+
+{categories}
+
+Now, you will classify the following items:
+
+{topics}
+
+For each item, choose up to 2 categories FROM THE LIST ABOVE that best describe it.
+If none apply, leave the category list blank.
+
+Rules:
+- Use ONLY the category names from the list above.
+- Do NOT change category names in any way.
+- Format exactly as shown below.
+- Use the "General X" only if others don't apply
+
+Output format (one line per item):
+
+Item: <item> -> Categories: <category 1>[, <category 2>]
+
+Example:
+Item: Advances in solar energy -> Categories: Technology  
+Item: Viking mythology -> Categories: History, Mythology  
+Item: Paper clips -> Categories:
+
+Begin:

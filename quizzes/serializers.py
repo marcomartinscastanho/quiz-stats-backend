@@ -52,15 +52,16 @@ class QuizSerializer(serializers.ModelSerializer):
         fields = ["season", "week", "parts"]
 
 
-class PredictedTopicStatsInputSerializer(serializers.Serializer):
-    user_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), allow_empty=False)
-    topics = serializers.ListField(child=serializers.CharField(max_length=100), allow_empty=False)
+class CategorizedTopicSerializer(serializers.Serializer):
+    topic = serializers.CharField()
+    categories = CategorySerializer(many=True)
 
-    def validate_user_ids(self, value):
-        missing_ids = set(value) - set(User.objects.filter(id__in=value).values_list("id", flat=True))
-        if missing_ids:
-            raise serializers.ValidationError(f"Invalid user_ids: {list(missing_ids)}")
-        return value
+
+class TopicCategorizationSerializer(serializers.Serializer):
+    first_half_topics = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
+    second_half_topics = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
+    first_half_categories = serializers.ListField(child=CategorizedTopicSerializer(), read_only=True)
+    second_half_categories = serializers.ListField(child=CategorizedTopicSerializer(), read_only=True)
 
 
 class QuizProgressSerializer(serializers.ModelSerializer):
