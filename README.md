@@ -124,7 +124,7 @@ Each player should take note of their topic order, so that they know what to cho
 Potentially include the team results in the mix, so that the order also takes into account how the colleagues may be able to assist in case of rebounds.  
 So perhaps the order should be: (xTplayer, xTteam)
 
-##### 5. Topics per team
+#### 5. Topics per team
 
 When all players have played their indiviual questions, 4 topics are left.  
 It's impossible to predict which ones will be left.
