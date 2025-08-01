@@ -5,7 +5,7 @@ from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 
 from answers.models import UserAnswer
-from quizzes.mixins import CategoryGroupStatsMixin
+from quizzes.mixins import CategoryGroupStatsMixin, CategoryStatsMixin
 from teams.permissions import IsGroupMember
 from teams.serializers import TeamSerializer
 
@@ -34,4 +34,18 @@ class TeamCategoryGroupStatsView(CategoryGroupStatsMixin, GenericAPIView):
             UserAnswer.objects.filter(user__id__in=user_ids_in_team)
             .select_related("question")
             .prefetch_related("question__categories__group")
+        )
+
+
+class TeamCategoryStatsView(CategoryStatsMixin, GenericAPIView):
+    queryset = Group.objects.all()
+    permission_classes = [IsAuthenticated, IsGroupMember]
+
+    def get_user_answers(self):
+        team = self.get_object()
+        user_ids_in_team = team.user_set.values_list("id", flat=True)
+        return (
+            UserAnswer.objects.filter(user__id__in=user_ids_in_team)
+            .select_related("question")
+            .prefetch_related("question__categories")
         )
