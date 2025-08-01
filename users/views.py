@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
-from quizzes.mixins import CategoryGroupStatsMixin
+from quizzes.mixins import CategoryGroupStatsMixin, CategoryStatsMixin
 from teams.serializers import TeamSerializer
 from users.serializers import UserDetailSerializer, UserShortSerializer
 
@@ -53,3 +53,12 @@ class UserCategoryGroupStatsView(CategoryGroupStatsMixin, GenericAPIView):
             .select_related("question")
             .prefetch_related("question__categories__group")
         )
+
+
+class UserCategoryStatsView(CategoryStatsMixin, GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = User.objects.all()
+
+    def get_user_answers(self):
+        user = self.get_object()
+        return UserAnswer.objects.filter(user=user).select_related("question").prefetch_related("question__categories")
