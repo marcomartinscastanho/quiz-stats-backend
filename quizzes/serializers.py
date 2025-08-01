@@ -88,3 +88,12 @@ class CategoryGroupStatsSerializer(serializers.Serializer):
     group_name = serializers.CharField()
     xC = serializers.FloatField()
     answered = serializers.IntegerField()
+
+
+class CategoryStatsSerializer(serializers.Serializer):
+    category_id = serializers.IntegerField()
+    category_name = serializers.CharField()
+    xC = serializers.FloatField()
+    answered = serializers.IntegerField()
+
+
