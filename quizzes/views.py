@@ -1,17 +1,21 @@
 import logging
 import random
+from collections import Counter
 
+import numpy as np
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
 from quizzes.models import Category, CategoryGroup, Question, Quiz, Topic
 from quizzes.serializers import (
+    AptitudeSerializer,
     CategoryGroupSerializer,
     CategorySerializer,
     QuestionCategoryUpdateSerializer,
@@ -127,7 +131,6 @@ class ListQuizProgressView(ListAPIView):
             tc = quiz.total_correct
             quiz.progress = round((ta / tq) * 100, 1) if tq else 0.0
             quiz.correct = round((tc / ta) * 100, 1) if ta else 0.0
-
         return quizzes
 
 
@@ -181,3 +184,62 @@ class UpdateQuestionCategoriesView(UpdateAPIView):
         category_ids = serializer.validated_data["category_ids"]
         question.categories.set(category_ids)
         return Response({"detail": "Categories updated successfully."})
+
+
+class AptitudeView(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AptitudeSerializer
+
+    def post(self, request: Request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_ids = serializer.validated_data["user_ids"]
+        category_ids_input = serializer.validated_data["category_ids"]
+
+        # Frequency (weights) of each category
+        category_weights = Counter(category_ids_input)
+        unique_category_ids = list(category_weights.keys())
+        # Pre-fetch all relevant UserAnswers
+        answers = (
+            UserAnswer.objects.filter(user_id__in=user_ids, question__categories__in=unique_category_ids)
+            .select_related("question")
+            .prefetch_related("question__categories")
+        )
+
+        # Organize answers by user and category
+        user_category_scores = {user_id: {} for user_id in user_ids}
+        for answer in answers:
+            user_id: int = answer.user_id
+            question_categories = answer.question.categories.all()
+            is_correct = int(answer.is_correct)
+            for category in question_categories:
+                if category.id in category_weights:
+                    cat_scores = user_category_scores[user_id].setdefault(category.id, [])
+                    cat_scores.append(is_correct)
+
+        # Prune categories with fewer than 4 answers
+        for user_id, categories in user_category_scores.items():
+            user_category_scores[user_id] = {
+                cat_id: scores for cat_id, scores in categories.items() if len(scores) >= 4
+            }
+
+        # Compute weighted medians
+        results = []
+        for user_id in user_ids:
+            per_category_scores = user_category_scores.get(user_id, {})
+            weighted_scores = []
+            for cat_id, weight in category_weights.items():
+                scores = per_category_scores.get(cat_id, [])
+                if scores:
+                    accuracy = sum(scores) / len(scores)
+                    weighted_scores.extend([accuracy] * weight)
+            if weighted_scores:
+                weighted_scores.sort()
+                median = np.median(weighted_scores) * 2
+            else:
+                median = 0.0  # or None or 'N/A', depending on preference
+            results.append({"user_id": user_id, "aptitude": median})
+        # Sort ascending by aptitude (None goes last)
+        results.sort(key=lambda x: (x["aptitude"] is None, x["aptitude"]))
+        serializer = self.get_serializer(instance=results, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

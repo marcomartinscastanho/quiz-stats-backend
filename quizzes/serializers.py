@@ -97,3 +97,10 @@ class CategoryStatsSerializer(serializers.Serializer):
     answered = serializers.IntegerField()
 
 
+class AptitudeSerializer(serializers.Serializer):
+    # request
+    user_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, allow_empty=False)
+    category_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, allow_empty=False)
+    # response
+    user_id = serializers.IntegerField(read_only=True)
+    aptitude = serializers.FloatField(read_only=True)

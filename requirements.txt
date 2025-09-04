@@ -7,10 +7,11 @@ djangorestframework==3.16.0
 djangorestframework-simplejwt==5.5.0
 dotenv==0.9.9
 gunicorn
+numpy==2.3.2
 openai==1.93.0 
 psycopg2-binary
 python-dotenv==1.1.1
 python-pptx==1.0.2
 rapidfuzz==3.13.0
-requests==2.32.4
+requests==2.32.4 
 sqlparse==0.5.3
