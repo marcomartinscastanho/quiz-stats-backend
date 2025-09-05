@@ -11,6 +11,7 @@ from quizzes.views import (
     RandomUnansweredTopicView,
     TopicCategorizationView,
     UpdateQuestionCategoriesView,
+    XTView,
 )
 
 urlpatterns = [
@@ -22,6 +23,7 @@ urlpatterns = [
     path("categories/users/stats/", CategoryUserStatsView.as_view(), name="category-user-stats"),
     path("predictor/topics/categorize/", TopicCategorizationView.as_view(), name="categorize-topics"),
     path("predictor/order-of-play/", AptitudeView.as_view(), name="order-of-play"),
+    path("predictor/topics/sort/", XTView.as_view(), name="sort-topics-per-user"),
     path("progress/", ListQuizProgressView.as_view(), name="quiz-progress"),
     path("topics/random/", RandomUnansweredTopicView.as_view(), name="random-unanswered-topic"),
     path(
