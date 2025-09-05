@@ -37,7 +37,7 @@ class CategoryGroupStatsMixin:
             {
                 "group_id": category_group_id,
                 "group_name": stats["group_name"],
-                "xC": round((stats["correct"] / stats["total"]) * 2, 1) if stats["total"] > 0 else 0.0,
+                "xC": (stats["correct"] / stats["total"]) * 2 if stats["total"] > 0 else 0.0,
                 "answered": stats["total"],
             }
             for category_group_id, stats in stats.items()
@@ -81,7 +81,7 @@ class CategoryStatsMixin:
                 "category_id": category_id,
                 "category_name": stats["category_name"],
                 "category_group_id": stats["category_group_id"],
-                "xC": round((stats["correct"] / stats["total"]) * 2, 1) if stats["total"] > 0 else 0.0,
+                "xC": (stats["correct"] / stats["total"]) * 2 if stats["total"] > 0 else 0.0,
                 "answered": stats["total"],
             }
             for category_id, stats in stats.items()

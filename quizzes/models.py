@@ -60,7 +60,7 @@ class Topic(models.Model):
             xps.append(xp)
         if not xps:
             return None
-        return round(sum(xps), 1)
+        return sum(xps)
 
 
 class CategoryGroup(models.Model):
@@ -103,7 +103,7 @@ class Question(models.Model):
         if total == 0:
             return None
         correct = qs["correct"]
-        return round((correct / total) * 2, 1)
+        return (correct / total) * 2
 
     @property
     def has_category(self):
