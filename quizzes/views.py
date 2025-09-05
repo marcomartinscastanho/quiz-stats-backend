@@ -91,7 +91,7 @@ class CategoryUserStatsView(APIView):
             users_result = []
             for stat in user_stats.values():
                 if stat["total"] > 0:
-                    stat["xC"] = round((stat["correct"] / stat["total"]) * 2, 1)
+                    stat["xC"] = (stat["correct"] / stat["total"]) * 2
                     users_result.append({"user": stat["user"], "xC": stat["xC"], "answered": stat["total"]})
             # Sort users by xC descending
             users_result.sort(key=lambda u: u["xC"], reverse=True)
@@ -130,8 +130,8 @@ class ListQuizProgressView(ListAPIView):
             tq = quiz.total_questions
             ta = quiz.total_answered
             tc = quiz.total_correct
-            quiz.progress = round((ta / tq) * 100, 1) if tq else 0.0
-            quiz.correct = round((tc / ta) * 100, 1) if ta else 0.0
+            quiz.progress = (ta / tq) * 100 if tq else 0.0
+            quiz.correct = (tc / ta) * 100 if ta else 0.0
         return quizzes
 
 
