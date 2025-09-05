@@ -1,6 +1,6 @@
 import logging
 import random
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 from django.contrib.auth import get_user_model
@@ -23,6 +23,7 @@ from quizzes.serializers import (
     QuizSerializer,
     TopicCategorizationSerializer,
     TopicSerializer,
+    XTSerializer,
 )
 from quizzes.utils import classify_topics_list
 
@@ -243,3 +244,62 @@ class AptitudeView(GenericAPIView):
         results.sort(key=lambda x: (x["aptitude"] is None, x["aptitude"]))
         serializer = self.get_serializer(instance=results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class XTView(GenericAPIView):
+    serializer_class = XTSerializer
+
+    def post(self, request: Request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_ids = serializer.validated_data["user_ids"]
+        topics = serializer.validated_data["topics"]
+
+        results = {"team": {"topics": []}, "users": []}
+
+        # Preload relevant answers only once
+        all_category_ids = {cid for t in topics for cid in t["category_ids"]}
+        answers = (
+            UserAnswer.objects.filter(Q(user_id__in=user_ids), question__categories__in=all_category_ids)
+            .select_related("question")
+            .prefetch_related("question__categories")
+        )
+
+        # Index answers by user and category
+        user_category_answers = defaultdict(lambda: defaultdict(list))
+        for ans in answers:
+            for category in ans.question.categories.all():
+                user_category_answers[ans.user_id][category.id].append(int(ans.is_correct))
+
+        # --- Per user ---
+        for user_id in user_ids:
+            topic_scores = []
+            for topic in topics:
+                cat_ids = topic["category_ids"]
+                scores = []
+                for cid in cat_ids:
+                    user_scores = user_category_answers[user_id].get(cid, [])
+                    scores.extend(user_scores)
+                # prune: only include if at least 4 answers
+                xt = 2 * (sum(scores) / len(scores)) if len(scores) >= 4 else 0.0
+                topic_scores.append({"topic": topic["name"], "xT": xt})
+            topic_scores.sort(key=lambda x: x["xT"], reverse=True)
+            results["users"].append({"user_id": user_id, "topics": topic_scores})
+
+        # --- Team ---
+        team_topic_scores = []
+        for topic in topics:
+            cat_ids = topic["category_ids"]
+            scores = []
+            for user_id in user_ids:
+                for cid in cat_ids:
+                    user_scores = user_category_answers[user_id].get(cid, [])
+                    scores.extend(user_scores)
+            xt = 2 * (sum(scores) / len(scores)) if len(scores) >= 4 else 0.0
+            team_topic_scores.append({"topic": topic["name"], "xT": xt})
+        team_topic_scores.sort(key=lambda x: x["xT"], reverse=True)
+        results["team"]["topics"] = team_topic_scores
+
+        # Return using the same serializer
+        response_serializer = self.get_serializer(instance=results)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

@@ -14,7 +14,7 @@ class Quiz(models.Model):
         return f"Season {self.season} - Week {self.week}"
 
 
-def ppt_upload_path(instance, filename):
+def ppt_upload_path(instance, filename):  # TODO: move
     season = instance.quiz.season
     week = instance.quiz.week
     part_num = instance.sequence
@@ -44,7 +44,7 @@ class Topic(models.Model):
         return self.title
 
     @property
-    def xT(self):
+    def xT(self):  # XXX: never used
         questions: QuerySet[Question] = self.questions.all()
         if not questions.exists():
             return None

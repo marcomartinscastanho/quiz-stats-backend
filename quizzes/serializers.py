@@ -104,3 +104,32 @@ class AptitudeSerializer(serializers.Serializer):
     # response
     user_id = serializers.IntegerField(read_only=True)
     aptitude = serializers.FloatField(read_only=True)
+
+
+class TopicInputSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    category_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class TopicOutputSerializer(serializers.Serializer):
+    topic = serializers.CharField()
+    xT = serializers.FloatField()
+
+
+class TeamOutputSerializer(serializers.Serializer):
+    topics = serializers.ListField(child=TopicOutputSerializer())
+
+
+class UserOutputSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    topics = serializers.ListField(child=TopicOutputSerializer())
+
+
+class XTSerializer(serializers.Serializer):
+    # request
+    user_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+    topics = TopicInputSerializer(many=True, write_only=True)
+
+    # response
+    team = TeamOutputSerializer(read_only=True)
+    users = serializers.ListField(child=UserOutputSerializer(), read_only=True)
