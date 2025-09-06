@@ -93,7 +93,7 @@ class Question(models.Model):
         return self.statement
 
     @property
-    def xP(self):
+    def xP(self):  # XXX: never used
         from answers.models import UserAnswer
 
         qs = UserAnswer.objects.filter(question=self).aggregate(
