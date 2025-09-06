@@ -22,6 +22,15 @@ class HasCategoryFilter(admin.SimpleListFilter):
         return queryset
 
 
+class QuestionInline(admin.TabularInline):  # or StackedInline if you prefer
+    model = Question.categories.through
+    extra = 0
+    verbose_name = "Question"
+    verbose_name_plural = "Questions"
+    autocomplete_fields = ["question"]  # helps if you have many questions
+    can_delete = False
+
+
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display = ("season", "week")
@@ -56,6 +65,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ["group"]
     search_fields = ["name"]
     ordering = ["group__name", "name"]
+    inlines = [QuestionInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -69,13 +79,20 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("short_statement", "answer", "has_category_display")
-    list_filter = (HasCategoryFilter,)
+    list_filter = (
+        "categories",
+        HasCategoryFilter,
+    )
     search_fields = ("statement", "answer")
     readonly_fields = ["topic", "statement", "answer", "is_box"]
 
     @admin.display(description="Question")
     def short_statement(self, obj: Question):
         return (obj.statement[:75] + "...") if len(obj.statement) > 75 else obj.statement
+
+    @admin.display(description="Categories")
+    def categories_list(self, obj: Question):
+        return ", ".join(cat.name for cat in obj.categories.all())
 
     @admin.display(boolean=True, description="Has category")
     def has_category_display(self, obj):
