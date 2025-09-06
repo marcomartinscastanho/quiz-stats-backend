@@ -4,6 +4,24 @@ from django.db.models import Count
 from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
 
 
+class HasCategoryFilter(admin.SimpleListFilter):
+    title = "Has category"
+    parameter_name = "has_category"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(categories__isnull=False).distinct()
+        if self.value() == "no":
+            return queryset.filter(categories__isnull=True)
+        return queryset
+
+
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display = ("season", "week")
@@ -50,8 +68,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("short_statement", "answer", "has_category")
-    list_filter = ("is_box",)
+    list_display = ("short_statement", "answer", "has_category_display")
+    list_filter = (HasCategoryFilter,)
     search_fields = ("statement", "answer")
     readonly_fields = ["topic", "statement", "answer", "is_box"]
 
@@ -59,6 +77,6 @@ class QuestionAdmin(admin.ModelAdmin):
     def short_statement(self, obj: Question):
         return (obj.statement[:75] + "...") if len(obj.statement) > 75 else obj.statement
 
-    @admin.display(description="Has Category", boolean=True)
-    def has_category(self, obj):
+    @admin.display(boolean=True, description="Has category")
+    def has_category_display(self, obj):
         return obj.has_category
