@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Count
 
 from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
 
@@ -33,10 +34,18 @@ class CategoryGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "group"]
+    list_display = ["name", "group", "question_count"]
     list_filter = ["group"]
     search_fields = ["name"]
     ordering = ["group__name", "name"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(_question_count=Count("questions", distinct=True))
+
+    @admin.display(ordering="_question_count", description="# questions")
+    def question_count(self, obj):
+        return obj._question_count
 
 
 @admin.register(Question)
