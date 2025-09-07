@@ -57,7 +57,7 @@ class CategoriesView(ListAPIView):
 
 
 class CategoryGroupListView(ListAPIView):
-    queryset = CategoryGroup.objects.all().order_by("id")
+    queryset = CategoryGroup.objects.prefetch_related("categories").all().order_by("id")
     serializer_class = CategoryGroupSerializer
     permission_classes = []
 

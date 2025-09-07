@@ -22,9 +22,9 @@ class CategoryGroupStatsMixin:
             group.pk: {"group_name": group.name, "correct": 0, "total": 0} for group in all_category_groups
         }
         for ua in user_answers:
-            for category in ua.question.categories.all():
-                category_group = category.group
-                stats = category_group_stats[category_group.pk]
+            groups_for_question = {c.group_id for c in ua.question.categories.all()}
+            for group_id in groups_for_question:
+                stats = category_group_stats[group_id]
                 stats["total"] += 1
                 if ua.is_correct:
                     stats["correct"] += 1
