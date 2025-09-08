@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.db.models import Count
 
+from answers.models import UserAnswer
 from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
 
 
@@ -66,15 +67,22 @@ class CategoryAdmin(admin.ModelAdmin):
         return obj._question_count
 
 
+class UserAnswerInline(admin.TabularInline):
+    model = UserAnswer
+    extra = 0  # no empty forms
+    fields = ("user", "is_correct", "created_at")
+    readonly_fields = ("user", "is_correct", "created_at")
+    can_delete = False
+    show_change_link = True
+
+
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("short_statement", "answer", "has_category_display")
-    list_filter = (
-        "categories",
-        HasCategoryFilter,
-    )
+    list_filter = ("categories", HasCategoryFilter)
     search_fields = ("statement", "answer")
     readonly_fields = ["topic", "statement", "answer", "is_box"]
+    inlines = [UserAnswerInline]
 
     @admin.display(description="Question")
     def short_statement(self, obj: Question):
