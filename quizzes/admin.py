@@ -22,15 +22,6 @@ class HasCategoryFilter(admin.SimpleListFilter):
         return queryset
 
 
-class QuestionInline(admin.TabularInline):  # or StackedInline if you prefer
-    model = Question.categories.through
-    extra = 0
-    verbose_name = "Question"
-    verbose_name_plural = "Questions"
-    autocomplete_fields = ["question"]  # helps if you have many questions
-    can_delete = False
-
-
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display = ("season", "week")
@@ -65,7 +56,6 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ["group"]
     search_fields = ["name"]
     ordering = ["group__name", "name"]
-    inlines = [QuestionInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
