@@ -53,7 +53,7 @@ class CategoryGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "group", "question_count"]
+    list_display = ["name", "group", "description", "question_count"]
     list_filter = ["group"]
     search_fields = ["name"]
     ordering = ["group__name", "name"]
