@@ -1,5 +1,8 @@
+import json
+
 from django.contrib import admin
-from django.db.models import Count
+from django.db.models import Count, QuerySet
+from django.http import HttpResponse
 
 from answers.models import UserAnswer
 from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
@@ -49,11 +52,33 @@ class TopicAdmin(admin.ModelAdmin):
 @admin.register(CategoryGroup)
 class CategoryGroupAdmin(admin.ModelAdmin):
     list_display = ["name"]
+    actions = ["download_json"]
+
+    @admin.action(description="Download as JSON")
+    def download_json(self, request, queryset: QuerySet[CategoryGroup]):
+        """
+        Admin action to download selected CategoryGroups with their Categories as JSON.
+        """
+        data = []
+        for group in queryset.prefetch_related("categories"):
+            group_data = {
+                "id": group.pk,
+                "name": group.name,
+                "categories": [
+                    {"id": cat.pk, "name": cat.name, "description": cat.description, "# questions": cat._question_count}
+                    for cat in group.categories.annotate(_question_count=Count("questions", distinct=True)).all()
+                ],
+            }
+            data.append(group_data)
+
+        response = HttpResponse(json.dumps(data, indent=2), content_type="application/json")
+        response["Content-Disposition"] = 'attachment; filename="category_groups.json"'
+        return response
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "group", "question_count"]
+    list_display = ["name", "group", "description", "question_count"]
     list_filter = ["group"]
     search_fields = ["name"]
     ordering = ["group__name", "name"]

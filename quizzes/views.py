@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from answers.models import UserAnswer
+from quizstats.constants import MIN_ANSWERS
 from quizzes.models import Category, CategoryGroup, Question, Quiz, Topic
 from quizzes.serializers import (
     AptitudeSerializer,
@@ -281,7 +282,7 @@ class XTView(GenericAPIView):
                     user_scores = user_category_answers[user_id].get(cid, [])
                     scores.extend(user_scores)
                 # prune: only include if at least 4 answers
-                xt = 2 * (sum(scores) / len(scores)) if len(scores) >= 4 else 0.0
+                xt = 2 * (sum(scores) / len(scores)) if len(scores) >= MIN_ANSWERS else 0.0
                 topic_scores.append({"topic": topic["name"], "xT": xt})
             topic_scores.sort(key=lambda x: x["xT"], reverse=True)
             results["users"].append({"user_id": user_id, "topics": topic_scores})
@@ -295,7 +296,7 @@ class XTView(GenericAPIView):
                 for cid in cat_ids:
                     user_scores = user_category_answers[user_id].get(cid, [])
                     scores.extend(user_scores)
-            xt = 2 * (sum(scores) / len(scores)) if len(scores) >= 4 else 0.0
+            xt = 2 * (sum(scores) / len(scores)) if len(scores) >= MIN_ANSWERS else 0.0
             team_topic_scores.append({"topic": topic["name"], "xT": xt})
         team_topic_scores.sort(key=lambda x: x["xT"], reverse=True)
         results["team"]["topics"] = team_topic_scores
