@@ -14,7 +14,7 @@ def format_categories_inline():
 
 
 @receiver(post_save, sender=Question)
-def create_user_info(sender, instance: Question, created, **kwargs):
+def categorize_question(sender, instance: Question, created, **kwargs):
     if created:
         categories = format_categories_inline()
         prompt = get_prompt(

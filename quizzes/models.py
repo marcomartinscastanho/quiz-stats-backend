@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import Count, Q, QuerySet
 
 
 class Quiz(models.Model):
@@ -43,25 +42,6 @@ class Topic(models.Model):
     def __str__(self):
         return self.title
 
-    @property
-    def xT(self):  # XXX: never used
-        questions: QuerySet[Question] = self.questions.all()
-        if not questions.exists():
-            return None
-        annotated = questions.annotate(
-            total_answers=Count("useranswer"),
-            correct_answers=Count("useranswer", filter=Q(useranswer__is_correct=True)),
-        ).filter(total_answers__gt=0)
-        if not annotated.exists():
-            return None
-        xps = []
-        for q in annotated:
-            xp = (q.correct_answers / q.total_answers) * 2
-            xps.append(xp)
-        if not xps:
-            return None
-        return sum(xps)
-
 
 class CategoryGroup(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -92,20 +72,3 @@ class Question(models.Model):
 
     def __str__(self):
         return self.statement
-
-    @property
-    def xP(self):  # XXX: never used
-        from answers.models import UserAnswer
-
-        qs = UserAnswer.objects.filter(question=self).aggregate(
-            total=Count("id"), correct=Count("id", filter=Q(is_correct=True))
-        )
-        total = qs["total"]
-        if total == 0:
-            return None
-        correct = qs["correct"]
-        return (correct / total) * 2
-
-    @property
-    def has_category(self):
-        return self.categories.exists()

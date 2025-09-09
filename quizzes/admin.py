@@ -103,7 +103,7 @@ class UserAnswerInline(admin.TabularInline):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("short_statement", "answer", "has_category_display")
+    list_display = ("short_statement", "answer", "categories_list")
     list_filter = ("categories", HasCategoryFilter)
     search_fields = ("statement", "answer")
     readonly_fields = ["topic", "statement", "answer", "is_box"]
@@ -116,7 +116,3 @@ class QuestionAdmin(admin.ModelAdmin):
     @admin.display(description="Categories")
     def categories_list(self, obj: Question):
         return ", ".join(cat.name for cat in obj.categories.all())
-
-    @admin.display(boolean=True, description="Has category")
-    def has_category_display(self, obj):
-        return obj.has_category
