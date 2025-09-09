@@ -72,7 +72,7 @@ class CategoryGroup(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    description = models.CharField(max_length=1024, null=True)
+    description = models.CharField(max_length=1024, null=True, blank=True)
     group = models.ForeignKey(CategoryGroup, related_name="categories", on_delete=models.CASCADE)
 
     class Meta:
