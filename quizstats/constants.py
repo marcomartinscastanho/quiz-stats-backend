@@ -1,0 +1,1 @@
+MIN_ANSWERS = 4
