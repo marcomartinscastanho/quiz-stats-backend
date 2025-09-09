@@ -1,11 +1,12 @@
 import json
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db.models import Count, QuerySet
 from django.http import HttpResponse
 
 from answers.models import UserAnswer
 from quizzes.models import Category, CategoryGroup, Question, Quiz, QuizPart, Topic
+from quizzes.utils import categorize_question
 
 
 class HasCategoryFilter(admin.SimpleListFilter):
@@ -108,6 +109,7 @@ class QuestionAdmin(admin.ModelAdmin):
     search_fields = ("statement", "answer")
     readonly_fields = ["topic", "statement", "answer", "is_box"]
     inlines = [UserAnswerInline]
+    actions = ["re_categorize_questions"]
 
     @admin.display(description="Question")
     def short_statement(self, obj: Question):
@@ -116,3 +118,18 @@ class QuestionAdmin(admin.ModelAdmin):
     @admin.display(description="Categories")
     def categories_list(self, obj: Question):
         return ", ".join(cat.name for cat in obj.categories.all())
+
+    @admin.action(description="Re-categorize selected questions")
+    def re_categorize_questions(self, request, queryset: QuerySet[Question]):
+        total = queryset.count()
+        updated = 0
+
+        for question in queryset:
+            old_categories = set(question.categories.all())
+            categorize_question(question)
+            if set(question.categories.all()) != old_categories:
+                updated += 1
+
+        self.message_user(
+            request, f"Processed {total} questions. {updated} questions had updated categories.", messages.INFO
+        )

@@ -1,13 +1,22 @@
-You are categorizing a quiz game question.
+You are an expert quiz categorization assistant.
+
+Your task is to determine which type(s) of knowledge are most necessary to answer the question correctly.  
 
 Question: "{question}"
 Answer: "{answer}"
 
-Choose **one or two** categories from the list below that best match the question and answer.
+Below is a list of valid knowledge categories. Pick **one or two categories that best represent the knowledge required** to answer this question. Avoid using any category that starts with "General" unless no other category fits.
 
 Categories:
 {categories}
 
-Respond with only the category names, exactly as shown above, separated by commas, with no extra text.
+Instructions:
+- Respond with only the category names, exactly as shown above, separated by commas.
+- Do NOT invent new categories or reword existing ones.
+- Use one category if one is clearly the best, two if two are relevant.
+- If none fit, respond with "None".
 
-Example: Biology,Physics
+Example:
+Question: "What is the chemical symbol for water?"
+Answer: "H2O"
+Categories: Chemistry
